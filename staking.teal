@@ -1,0 +1,368 @@
+// Staking Demo
+#pragma version 6
+
+// Deposit:
+//	+ Asset Transfer sending staking asset into pool
+txna ApplicationArgs 0
+method "deposit(axfer)void"
+==
+bnz method_deposit
+
+// Withdraw
+txna ApplicationArgs 0
+method "withdraw(asset,uint64,account)void"
+==
+bnz method_withdraw
+
+// Deploy:
+//	+ Staking Asset
+//	+ Reward Asset
+//	+ Begin Timestamp
+//	+ End Timestamp
+txna ApplicationArgs 0
+method "deploy(asset,asset,uint64,uint64)void"
+==
+bnz method_deploy
+
+// Config:
+//	+ Paused
+//	+ Admin
+txna ApplicationArgs 0
+method "config(bool,account)void"
+==
+bnz method_config
+
+// Init:
+txna ApplicationArgs 0
+method "init(pay,asset,asset)void"
+==
+bnz method_init
+
+err
+
+// Deposit
+// Group:
+//	[ * | axfer | appl | * ]
+// Scratch Spaces:
+//	0: appl group position
+//	1: axfer group position
+method_deposit:
+	callsub sub_is_not_paused
+
+	txn OnCompletion
+	int NoOp
+	==
+	txn OnCompletion
+	int OptIn
+	==
+	||
+	assert
+
+	callsub sub_update_rewards
+
+	// Store this appl position
+	txn GroupIndex
+	store 0
+
+	// Store the axfer position relative to the appl position
+	load 0
+	int 1
+	-
+	store 1
+
+	// Confirm sender for this appl and the axfer are the same
+	// Note: Do we need to care if it came from the same address?
+	txn Sender
+	load 1
+	gtxns Sender
+	==
+	assert
+
+	// Check the staking asset is being received by the smart contract
+	load 1
+	gtxns AssetReceiver
+	global CurrentApplicationAddress
+	==
+	assert
+
+	// Add deposit to users local state
+	int 0
+	byte "SA"
+	dup2
+	app_local_get
+	load 1
+	gtxns AssetAmount
+	+
+	app_local_put
+
+	int 1
+	return
+
+// Withdraw
+// Group:
+//	[ * | appl | * ]
+method_withdraw:
+	callsub sub_is_not_paused
+
+	txn OnCompletion
+	int NoOp
+	==
+	txn OnCompletion
+	int CloseOut
+	==
+	||
+	assert
+
+	callsub sub_update_rewards
+
+	txna ApplicationArgs 1
+	btoi
+	txnas Assets
+
+	txna ApplicationArgs 2
+	btoi
+
+	txna ApplicationArgs 3
+	btoi
+	txnas Accounts
+
+	callsub sub_send_asset
+
+	txn OnCompletion
+	int CloseOut
+	bz skip_closeout_check
+
+	// Make sure there's no outstanding staked
+	txna ApplicationArgs 3
+	btoi
+	txnas Accounts
+	byte "SA"
+	app_local_get
+	!
+	assert
+
+	// Make sure there's no outstanding rewards
+	txna ApplicationArgs 3
+	btoi
+	txnas Accounts
+	byte "RA"
+	app_local_get
+	!
+	assert
+
+skip_closeout_check:
+	int 1
+	return
+
+method_deploy:
+	// Can only deploy as a new smart contracts
+	txn ApplicationID
+	!
+	assert
+
+	// Use sender as admin
+	int 0
+	callsub sub_set_admin
+
+	// Set staking asset
+	byte "S"
+	txn ApplicationArgs 1
+	btoi
+	txnas Assets
+	app_global_put
+
+	// Set reward asset
+	byte "R"
+	txn ApplicationArgs 2
+	btoi
+	txnas Assets
+	app_global_put
+
+	// Set begin timestamp
+	byte "B"
+	txn ApplicationArgs 3
+	btoi
+	app_global_put
+
+	// Set end timestamp
+	byte "E"
+	txn ApplicationArgs 4
+	btoi
+	app_global_put
+
+	int 1
+	return
+
+// Init
+// Group:
+//	[ * | pay | appl | * ]
+// Scratch Spaces:
+//	0: appl group position
+//	1: pay group position
+method_init:
+	callsub sub_is_admin
+
+	// Store this appl position
+	txn GroupIndex
+	store 0
+
+	// Store the pay position relative to the appl position
+	load 0
+	int 1
+	-
+	store 1
+
+	// Check receiver of payment is this smart contract
+	load 1
+	gtxns Receiver
+	global CurrentApplicationAddress
+	==
+	assert
+
+	// Check amount is greater than minimum balance requirement
+	load 1
+	gtxns Amount
+	int 302000
+	>=
+	assert
+
+	txn ApplicationArgs 1
+	btoi
+	txnas Assets
+	callsub sub_optin_asset
+
+	txn ApplicationArgs 2
+	btoi
+	txnas Assets
+	callsub sub_optin_asset
+
+	int 1
+	return
+
+method_config:
+	callsub sub_is_admin
+
+	byte "P"
+	txna ApplicationArgs 1
+	btoi
+	!
+	!
+	app_global_put
+
+	txna ApplicationArgs 2
+	btoi
+	callsub sub_set_admin
+
+	int 1
+	return
+
+/////////////////
+// Subroutines //
+/////////////////
+
+// sub_set_admin(uint64)
+// The argument is an index that's used to point at the accounts array.
+sub_set_admin:
+	txnas Accounts
+	byte "A"
+	swap
+	app_global_put
+	retsub
+
+sub_is_not_paused:
+	byte "P"
+	app_global_get
+	!
+	assert
+	retsub
+
+sub_is_admin:
+	txn Sender
+	byte "A"
+	app_global_get
+	==
+	assert
+	retsub
+
+sub_optin_asset:
+	itxn_begin
+
+	itxn_field XferAsset
+
+	int axfer
+	itxn_field TypeEnum
+
+	global CurrentApplicationAddress
+	itxn_field AssetReceiver
+
+	itxn_submit
+	retsub
+
+// sub_send_asset(uint64,uint64,uint64)
+// Arguments:
+//	+ Asset
+//	+ Amount
+//	+ Account
+// Scratch Space:
+//	+ 10: asset
+//	+ 11: asset amount
+//	+ 12: account
+sub_send_asset:
+	store 12
+	store 11
+	store 10
+
+	// Check amount is less than or equal to the amount in users local state
+	load 11
+	int 0
+	load 12
+	byte "SA"
+	app_local_get
+	<=
+	assert
+
+	// Remove amount from users local state
+	// Note: This could be done without the above check due to underflow errors
+	int 0
+	load 12
+	byte "SA"
+	dup2
+	app_local_get
+	load 11
+	-
+	app_local_put
+
+	// Send asset
+	itxn_begin
+
+	int axfer
+	itxn_field TypeEnum
+
+	load 10
+	itxn_field XferAsset
+
+	load 11
+	itxn_field AssetAmount
+
+	load 12
+	itxn_field AssetReceiver
+
+	int 0
+	itxn_field Fee
+
+	itxn_submit
+
+sub_update_rewards:
+	byte "ST"
+	global CurrentApplicationAddress
+	//asset_holding_get AssetBalance
+	acct_params_get AcctBalance
+	assert
+	app_global_put
+
+	byte "LU"
+	global LatestTimestamp
+	app_global_put
+
+	retsub
+
