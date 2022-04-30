@@ -1,7 +1,30 @@
 // Staking Demo
+// Author: Steve Ferrigno (@nullun)
+//
+// Global States:
+//	+ A  - Admin
+//	+ P  - Paused
+//	+ SA - Staking Asset
+//	+ RA - Reward Asset
+//	+ BT - Begin Timestamp
+//	+ ET - End Timestamp
+//	+ TS - Total Staked
+//	+ TR - Total Rewards (remaining)
+//	+ LU - Last Updated
+//
+// Local States:
+//	+ AS - Amount Staked
+//	+ AR - Amount Rewarded
+//	+ LU - Last Updated
+//
 #pragma version 6
 
-// Deposit:
+// Deposit
+// Who: Users
+// Why: Add an amount of staked assets to the pool, increasing their share of
+//      the rewards.
+// Group:
+//	[ * | axfer | appl | * ]
 //	+ Asset Transfer sending staking asset into pool
 txna ApplicationArgs 0
 method "deposit(axfer)void"
@@ -9,12 +32,39 @@ method "deposit(axfer)void"
 bnz method_deposit
 
 // Withdraw
+// Who: Users
+// Why: Remove an amount of staked assets from the pool, decreasing their share
+//      of the rewards.
+// Group:
+//	[ * | appl | * ]
+// Args:
+//	+ Staking/Reward Asset
+//	+ Amount to withdraw
+//	+ Account to withdraw asset to
 txna ApplicationArgs 0
 method "withdraw(asset,uint64,account)void"
 ==
 bnz method_withdraw
 
-// Deploy:
+// Config
+// Who: Admin
+// Why: Pause/unpause the contract, or change admin.
+// Group:
+//	[ * | appl | * ]
+// Args:
+//	+ Paused
+//	+ Admin
+txna ApplicationArgs 0
+method "config(bool,account)void"
+==
+bnz method_config
+
+// Deploy
+// Who: Admin
+// Why: Used to deploy the contract, defining assets and times.
+// Group:
+//	[ * | appl | * ]
+// Args:
 //	+ Staking Asset
 //	+ Reward Asset
 //	+ Begin Timestamp
@@ -24,31 +74,43 @@ method "deploy(asset,asset,uint64,uint64)void"
 ==
 bnz method_deploy
 
-// Config:
-//	+ Paused
-//	+ Admin
-txna ApplicationArgs 0
-method "config(bool,account)void"
-==
-bnz method_config
-
-// Init:
+// Init
+// Who: Admin
+// Why: Initialise the newly deployed contract, funding it with a minimum
+//      balance and allowing it to opt in to the required assets.
+// Group:
+//	[ * | pay | appl | * ]
+// Args:
+//	+ Staking Asset
+//	+ Reward Asset
 txna ApplicationArgs 0
 method "init(pay,asset,asset)void"
 ==
 bnz method_init
 
+// Update Rewards
+// Who: Admin
+// Why: Primarily used to supply the initial rewards for the staking contract,
+//      but can also be used to add additional rewards before the contract ends.
+// Group:
+//	[ * | axfer | appl | * ]
+// Args:
+//	+ Reward Asset
+txna ApplicationArgs 0
+method "reward(axfer,asset)void"
+==
+bnz method_reward
+
 err
 
 // Deposit
-// Group:
-//	[ * | axfer | appl | * ]
 // Scratch Spaces:
 //	0: appl group position
 //	1: axfer group position
 method_deposit:
 	callsub sub_is_not_paused
 
+	// Can only deposit during an OptIn or NoOp
 	txn OnCompletion
 	int NoOp
 	==
@@ -57,8 +119,6 @@ method_deposit:
 	==
 	||
 	assert
-
-	callsub sub_update_rewards
 
 	// Store this appl position
 	txn GroupIndex
@@ -87,7 +147,7 @@ method_deposit:
 
 	// Add deposit to users local state
 	int 0
-	byte "SA"
+	byte "AS"
 	dup2
 	app_local_get
 	load 1
@@ -99,8 +159,6 @@ method_deposit:
 	return
 
 // Withdraw
-// Group:
-//	[ * | appl | * ]
 method_withdraw:
 	callsub sub_is_not_paused
 
@@ -112,8 +170,6 @@ method_withdraw:
 	==
 	||
 	assert
-
-	callsub sub_update_rewards
 
 	txna ApplicationArgs 1
 	btoi
@@ -128,8 +184,8 @@ method_withdraw:
 
 	callsub sub_send_asset
 
+	// If it's a NoOp (0) we can skip the closeout check
 	txn OnCompletion
-	int CloseOut
 	bz skip_closeout_check
 
 	// Make sure there's no outstanding staked
@@ -154,6 +210,7 @@ skip_closeout_check:
 	int 1
 	return
 
+// Deploy
 method_deploy:
 	// Can only deploy as a new smart contracts
 	txn ApplicationID
@@ -162,40 +219,50 @@ method_deploy:
 
 	// Use sender as admin
 	int 0
+	txnas Accounts
 	callsub sub_set_admin
 
 	// Set staking asset
-	byte "S"
+	byte "SA"
 	txn ApplicationArgs 1
 	btoi
 	txnas Assets
 	app_global_put
 
 	// Set reward asset
-	byte "R"
+	byte "RA"
 	txn ApplicationArgs 2
 	btoi
 	txnas Assets
 	app_global_put
 
 	// Set begin timestamp
-	byte "B"
+	// Must be after LatestTimestamp
+	byte "BT"
 	txn ApplicationArgs 3
 	btoi
+	dup
+	global LatestTimestamp
+	>
+	assert
 	app_global_put
 
 	// Set end timestamp
-	byte "E"
+	// Must be after begin timestamp
+	byte "ET"
 	txn ApplicationArgs 4
 	btoi
+	dup
+	txn ApplicationArgs 3
+	btoi
+	>
+	assert
 	app_global_put
 
 	int 1
 	return
 
 // Init
-// Group:
-//	[ * | pay | appl | * ]
 // Scratch Spaces:
 //	0: appl group position
 //	1: pay group position
@@ -220,25 +287,108 @@ method_init:
 	assert
 
 	// Check amount is greater than minimum balance requirement
+	global CurrentApplicationAddress
+	balance
 	load 1
 	gtxns Amount
-	int 302000
+	+
+	global MinBalance
+	txn NumAssets
+	int 1
+	+
+	*
+	global MinTxnFee
+	txn NumAssets
+	*
+	+
 	>=
 	assert
 
-	txn ApplicationArgs 1
+	// OptIn to all assets
+	int 1
+	store 2
+	optin_loop:
+	load 2
+	txn NumAssets
+	<=
+	bz optin_complete
+	load 2
+	txnas ApplicationArgs
 	btoi
 	txnas Assets
 	callsub sub_optin_asset
+	load 2
+	int 1
+	+
+	store 2
+	b optin_loop
 
-	txn ApplicationArgs 2
-	btoi
+	optin_complete:
+	int 1
+	return
+
+// Reward
+// Scratch Spaces:
+//	0: appl group position
+//	1: axfer group position
+//	2: Reward Balance
+method_reward:
+	callsub sub_is_admin
+
+	// Store this appl position
+	txn GroupIndex
+	store 0
+
+	// Store the axfer position relative to the appl position
+	load 0
+	int 1
+	-
+	store 1
+
+	// Check previous transaction is of type axfer
+	load 1
+	gtxns TypeEnum
+	int axfer
+	==
+	assert
+
+	// Check receiver of payment is this smart contract
+	load 1
+	gtxns AssetReceiver
+	global CurrentApplicationAddress
+	==
+	assert
+
+	// Check received asset is reward
+	load 1
+	gtxns XferAsset
+	byte "RA"
+	app_global_get
+	==
+	assert
+
+	global CurrentApplicationAddress
+	byte "RA"
+	app_global_get
 	txnas Assets
-	callsub sub_optin_asset
+	asset_holding_get AssetBalance
+	assert
+	store 2
+
+	load 2
+	byte "TR"
+	app_global_get
+	-
+	load 1
+	gtxns AssetAmount
+	>=
+	assert
+
 
 	int 1
 	return
 
+// Config
 method_config:
 	callsub sub_is_admin
 
@@ -251,6 +401,7 @@ method_config:
 
 	txna ApplicationArgs 2
 	btoi
+	txnas Accounts
 	callsub sub_set_admin
 
 	int 1
@@ -260,10 +411,7 @@ method_config:
 // Subroutines //
 /////////////////
 
-// sub_set_admin(uint64)
-// The argument is an index that's used to point at the accounts array.
 sub_set_admin:
-	txnas Accounts
 	byte "A"
 	swap
 	app_global_put
@@ -284,6 +432,9 @@ sub_is_admin:
 	assert
 	retsub
 
+// sub_optin_asset(asset)
+// Arguments:
+//	+ Asset
 sub_optin_asset:
 	itxn_begin
 
@@ -298,15 +449,15 @@ sub_optin_asset:
 	itxn_submit
 	retsub
 
-// sub_send_asset(uint64,uint64,uint64)
+// sub_send_asset(asset,uint64,account)
 // Arguments:
 //	+ Asset
 //	+ Amount
 //	+ Account
 // Scratch Space:
-//	+ 10: asset
-//	+ 11: asset amount
-//	+ 12: account
+//	10: asset
+//	11: asset amount
+//	12: account
 sub_send_asset:
 	store 12
 	store 11
@@ -314,7 +465,6 @@ sub_send_asset:
 
 	// Check amount is less than or equal to the amount in users local state
 	load 11
-	int 0
 	load 12
 	byte "SA"
 	app_local_get
@@ -323,7 +473,6 @@ sub_send_asset:
 
 	// Remove amount from users local state
 	// Note: This could be done without the above check due to underflow errors
-	int 0
 	load 12
 	byte "SA"
 	dup2
@@ -351,18 +500,5 @@ sub_send_asset:
 	itxn_field Fee
 
 	itxn_submit
-
-sub_update_rewards:
-	byte "ST"
-	global CurrentApplicationAddress
-	//asset_holding_get AssetBalance
-	acct_params_get AcctBalance
-	assert
-	app_global_put
-
-	byte "LU"
-	global LatestTimestamp
-	app_global_put
-
 	retsub
 
