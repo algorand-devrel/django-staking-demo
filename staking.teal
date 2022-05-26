@@ -755,11 +755,23 @@ _calculate_rewards:
 
 	// Calculate
 	// AS * Duration / 31,557,600
+	int 0
 	load 61
+	int 0
 	load 62
-	*
+	mulw
+	swap
+	dup
+	int 0
+	==
+	bz keep_high64
+	b continue_divw
+	keep_high64:
+	swap
+	continue_divw:
 	int 31557600
-	/
+	divw
+	pop
 	store 63
 
 	load 63
