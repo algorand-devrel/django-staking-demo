@@ -27,7 +27,7 @@
 //	[ * | axfer | appl | * ]
 //	+ Asset Transfer sending staking asset into pool
 txna ApplicationArgs 0
-method "deposit(axfer)void"
+method "deposit(axfer,asset)void"
 ==
 bnz method_deposit
 
@@ -58,6 +58,16 @@ txna ApplicationArgs 0
 method "config(bool,account)void"
 ==
 bnz method_config
+
+// Update
+// Who: Admin
+// Why: In case of a security vulnerability the contract can be patched.
+// Group:
+//	[ * | appl | * ]
+txna ApplicationArgs 0
+method "update()void"
+==
+bnz method_update
 
 // Deploy
 // Who: Admin
@@ -95,9 +105,10 @@ bnz method_init
 // Group:
 //	[ * | axfer | appl | * ]
 // Args:
+//	+ Fixed Rate
 //	+ Reward Asset
 txna ApplicationArgs 0
-method "reward(axfer,asset)void"
+method "reward(axfer,uint64,asset)void"
 ==
 bnz method_reward
 
@@ -145,6 +156,9 @@ method_deposit:
 	==
 	assert
 
+	txn Sender
+	callsub _calculate_rewards
+
 	// Add deposit to users local state
 	int 0
 	byte "AS"
@@ -154,6 +168,15 @@ method_deposit:
 	gtxns AssetAmount
 	+
 	app_local_put
+
+	// Add shares to global
+	byte "TS"
+	dup
+	app_global_get
+	load 1
+	gtxns AssetAmount
+	+
+	app_global_put
 
 	int 1
 	return
@@ -170,6 +193,9 @@ method_withdraw:
 	==
 	||
 	assert
+
+	txn Sender
+	callsub _calculate_rewards
 
 	txna ApplicationArgs 1
 	btoi
@@ -192,7 +218,7 @@ method_withdraw:
 	txna ApplicationArgs 3
 	btoi
 	txnas Accounts
-	byte "SA"
+	byte "AS"
 	app_local_get
 	!
 	assert
@@ -201,7 +227,7 @@ method_withdraw:
 	txna ApplicationArgs 3
 	btoi
 	txnas Accounts
-	byte "RA"
+	byte "AR"
 	app_local_get
 	!
 	assert
@@ -367,23 +393,28 @@ method_reward:
 	==
 	assert
 
-	global CurrentApplicationAddress
+	// Set Precision Scale
+	byte "PS"
 	byte "RA"
 	app_global_get
-	txnas Assets
-	asset_holding_get AssetBalance
+	asset_params_get AssetDecimals
 	assert
-	store 2
+	app_global_put
 
-	load 2
+	// Increase Total Rewards available
 	byte "TR"
+	dup
 	app_global_get
-	-
 	load 1
 	gtxns AssetAmount
-	>=
-	assert
+	+
+	app_global_put
 
+	// Set fixed rate
+	byte "FR"
+	txn ApplicationArgs 1
+	btoi
+	app_global_put
 
 	int 1
 	return
@@ -407,6 +438,20 @@ method_config:
 	int 1
 	return
 
+// Update
+method_update:
+	callsub sub_is_admin
+
+	callsub sub_is_paused
+
+	txn OnCompletion
+	int UpdateApplication
+	==
+	assert
+
+	int 1
+	return
+
 /////////////////
 // Subroutines //
 /////////////////
@@ -421,6 +466,12 @@ sub_is_not_paused:
 	byte "P"
 	app_global_get
 	!
+	assert
+	retsub
+
+sub_is_paused:
+	byte "P"
+	app_global_get
 	assert
 	retsub
 
@@ -458,28 +509,61 @@ sub_optin_asset:
 //	10: asset
 //	11: asset amount
 //	12: account
+//	13: account asset amount
 sub_send_asset:
 	store 12
 	store 11
 	store 10
 
 	// Check amount is less than or equal to the amount in users local state
+	// If a larger value is requested, send the maximum the user has.
 	load 11
 	load 12
+	byte "AR"
+	byte "AS"
+	load 10
 	byte "SA"
+	app_global_get
+	==
+	select
 	app_local_get
+	dup
+	store 13
 	<=
-	assert
+	bnz send_requested
+	load 13
+	store 11
 
+	send_requested:
 	// Remove amount from users local state
 	// Note: This could be done without the above check due to underflow errors
 	load 12
+	byte "AR"
+	byte "AS"
+	load 10
 	byte "SA"
+	app_global_get
+	==
+	select
 	dup2
 	app_local_get
 	load 11
 	-
 	app_local_put
+
+	// Remove shares from global
+	byte "TR"
+	byte "TS"
+	load 10
+	byte "SA"
+	app_global_get
+	==
+	select
+	dup
+	app_global_get
+	load 11
+	-
+	app_global_put
 
 	// Send asset
 	itxn_begin
@@ -500,5 +584,212 @@ sub_send_asset:
 	itxn_field Fee
 
 	itxn_submit
+	retsub
+
+// sub_convert_to_shares(uint64)
+// Arguments:
+//	+ Amount
+// Scratch Space:
+//	50: amount
+sub_convert_to_shares:
+	store 50
+
+	// Get Staked Asset balance of smart contract
+	global CurrentApplicationAddress
+	byte "SA"
+	app_global_get
+	asset_holding_get AssetBalance
+	assert
+	dup
+	store 51
+	bz store_amount_as_shares
+
+	// Get total Shares of smart contract
+	byte "Shares"
+	app_global_get
+	dup
+	store 52
+	bz store_amount_as_shares
+
+	// Calculate shares
+	load 50
+	load 51
+	mulw
+	int 0
+	load 52
+	divmodw
+	pop
+	pop
+	swap
+	int 0
+	==
+	assert
+	retsub
+
+store_amount_as_shares:
+	load 50
+	retsub
+
+// Add to balance
+// _add_to_balance(uint64,account)
+// Arguments:
+//	+ Amount
+//	+ Account
+// Scratch Space:
+//	80: Amount
+//	81: Account
+_add_to_balance:
+	store 81
+	store 80
+
+	// Local
+	load 81
+	byte "SA"
+	dup2
+	app_local_get
+	load 80
+	+
+	app_local_put
+
+	// Global
+	byte "TS"
+	dup
+	app_global_get
+	load 80
+	+
+	app_global_put
+
+	retsub
+
+// Remove from balance
+// _remove_from_balance(uint64,account)
+// Arguments:
+//	+ Amount
+//	+ Account
+// Scratch Space:
+//	80: Amount
+//	81: Account
+_remove_from_balance:
+	store 81
+	store 80
+
+	// Local
+	load 81
+	byte "RA"
+	dup2
+	app_local_get
+	load 80
+	-
+	app_local_put
+
+	// Global
+	byte "TR"
+	dup
+	app_global_get
+	load 80
+	-
+	app_global_put
+
+	retsub
+
+// Calculate Rewards
+// _calulcate_rewards(account)
+// Arguments:
+//	+ Account
+// Scratch Space:
+//	60: Account
+//	61: Amount Staked
+//	62: Duration
+//	63: Reward
+_calculate_rewards:
+	store 60
+
+	// Skip if not begun
+	global LatestTimestamp
+	byte "BT"
+	app_global_get
+	>
+	bz skip_rewards
+
+
+	// Skip if updated since ET
+	load 60
+	byte "LU"
+	app_local_get
+	byte "ET"
+	app_global_get
+	<
+	bz skip_rewards
+
+	// Reward the account based on size of stake and duration in the pool
+	load 60
+	byte "AS"
+	app_local_get
+	store 61
+
+	// Calculate time since last updated
+	// LatestTimestamp (or ET) - Earlier Call
+	//
+	// LatestTimestamp
+	// 1) LT > BT (covered above)
+	// 2) LT > ET ? ET : LT
+	global LatestTimestamp
+	byte "ET"
+	app_global_get
+	dup2
+	>
+	select
+	// Earlier Call
+	// 1) LT > BT (covered above)
+	// 2) LU < BT ? BT : LU
+	load 60
+	byte "LU"
+	app_local_get
+	byte "BT"
+	app_global_get
+	dup2
+	<
+	select
+	-
+	store 62
+
+	// Calculate
+	// AS * Duration / 31,557,600
+	load 61
+	load 62
+	*
+	int 31557600
+	/
+	store 63
+
+	load 63
+	bz skip_rewards
+
+	// Remove Rewards from Global
+	byte "TR"
+	dup
+	app_global_get
+	load 63
+	-
+	app_global_put
+
+	// Add Rewards to Local
+	load 60
+	byte "AR"
+	dup2
+	app_local_get
+	load 63
+	+
+	app_local_put
+
+	// Update Global and Local Last Updated
+	load 60
+	byte "LU"
+	global LatestTimestamp
+	dup2
+	app_global_put
+	app_local_put
+
+	skip_rewards:
 	retsub
 
