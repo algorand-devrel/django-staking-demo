@@ -9,6 +9,12 @@ educational purposes. The rate of return is a fixed rate, regardless of the
 number of stakers. There is also no conversion between the value of the staked
 assest and the value of the reward asset. For this you would need an oracle.
 
+## Testing
+
+Use the `./deploy.sh` script to run through all the features of the contract.
+
+Use the `./update.sh` script to update the smart contract if you've modified it.
+
 ## Design Flow
 
 **Deployer**
