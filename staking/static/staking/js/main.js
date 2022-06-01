@@ -1,8 +1,11 @@
+// Various globals.
 var updated_rewards;
 var urInterval;
 var live;
 
+// Attach event listeners to controls on the page if found.
 window.addEventListener('load', async function() {
+	// Display an alert if AlgoSigner isn't installed.
 	if (typeof(AlgoSigner) === 'undefined') {
 		alert('AlgoSigner is required');
 	} else {
@@ -355,6 +358,8 @@ async function submit_transactions(txns) {
 	}
 }
 
+// Update the amount of rewards the user has accumulated with their stake in
+// the pool.
 async function update_rewards() {
 	const amount_staked = parseInt(document.getElementById('amount_staked').text.split(" ")[0]);
 	const amount_staked_raw = parseInt(document.getElementById('amount_staked').attributes['value'].value);
@@ -402,3 +407,4 @@ async function update_rewards() {
 	const new_value = Math.round((updated_rewards * dp)) / dp
 	document.getElementById('current_rewards').text = new_value + " " + reward_units;
 }
+

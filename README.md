@@ -1,13 +1,15 @@
 # Staking Demo
 
-This repository contains a demo of a staking contract and user interface for
-users to stake an asset in return for a reward which accrues depending on their
-amount and duration staked.
+This repository contains a Django demo of a staking contract and user interface
+for users to stake an asset in return for a reward which accrues depending on
+their amount and duration staked.
 
-Please note this is not a production ready contract and is purely for
+Please note this is not a production ready example and is purely for
 educational purposes. The rate of return is a fixed rate, regardless of the
 number of stakers. There is also no conversion between the value of the staked
 assest and the value of the reward asset. For this you would need an oracle.
+When deploying a new pool it is assumed that the full total supply of the
+reward asset is being deposited into the contract.
 
 ## Testing
 
