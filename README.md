@@ -1,5 +1,7 @@
 # Staking Demo
 
+![View Pool](view_pool.png)
+
 This repository contains a Django demo of a staking contract and user interface
 for users to stake an asset in return for a reward which accrues depending on
 their amount and duration staked.
