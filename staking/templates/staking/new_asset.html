@@ -2,63 +2,72 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Create Asset</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="{% static 'staking/css/pico.min.css' %}">
 		<link rel="stylesheet" href="{% static 'staking/css/style.css' %}">
 		<script src="{% static 'staking/js/main.js' %}" defer></script>
-		<script
-		  src="https://unpkg.com/algosdk@v1.16.0/dist/browser/algosdk.min.js"
-		  crossorigin="anonymous"
-		></script>
+		<title>Create Asset</title>
 	</head>
 	<body>
 		<div id="wait"><img src="{% static 'staking/img/spinner.gif' %}"></div>
-		<a href="{% url 'index' %}">&lt; back</a>
-		<h1>Create Asset</h1>
-		<button id="connect">Connect Wallet</button>
-		<select id="wallet_select">
-			<option>Select Account...</option>
-		</select>
-		<a id="address"></a><br>
-		<a id="balance"></a>
-		<hr>
-		<label for="asset_name">Name:
-			<input type="text" id="asset_name" name="asset_name" value="Asset"></input>
-		</label>
-		<br>
-		<label for="asset_unit_name">Unit Name:
-			<input type="text" id="asset_unit_name" name="asset_unit_name" value="A"></input>
-		</label>
-		<br>
-		<label for="asset_total">Total:
-			<input type="number" id="asset_total" name="asset_total" step=1 value=1000000000000></input>
-				<a>Default: 1,000,000.000.000</a>
-		</label>
-		<br>
-		<label for="asset_decimals">Decimals:
-			<input type="number" id="asset_decimals" name="asset_decimals" step=1 value=6></input>
-				<a>Default: 6</a>
-		</label>
-		<br>
-		<button id="create_asset">Create</button>
-		<hr>
-		<h2>Assets</h2>
-		<table>
-			<tr>
-				<th>Asset ID</th>
-				<th>Name</th>
-				<th>Unit Name</th>
-				<th>Total</th>
-				<th>Decimals</th>
-			</tr>
-			{% for a in assets %}
-			<tr>
-				<td>{{ a.index }}</td>
-				<td>{{ a.params.name }}</td>
-				<td>{{ a.params.unit_name }}</td>
-				<td>{{ a.params.total }}</td>
-				<td>{{ a.params.decimals }}</td>
-			</tr>
-			{% endfor %}
-		</table>
+		<main class="container">
+			<nav>
+				<ul>
+					<li>
+						<strong>Staking Demo</strong>
+					</li>
+				</ul>
+				<ul>
+					<li><a href="/">View Pools</a></li>
+					<li><a href="/new_asset">Create Asset</a></li>
+					<li><a href="/new_pool">Create Pool</a></li>
+				</ul>
+			</nav>
+			<h1>Create Asset</h1>
+			<button id="connect">Connect Wallet</button>
+			<select id="wallet_select"></select>
+			<a id="balance" class="secondary"></a>
+			<hr>
+			<label for="asset_name">Name:
+				<input type="text" id="asset_name" name="asset_name" value="Asset"></input>
+			</label>
+			<br>
+			<label for="asset_unit_name">Unit Name:
+				<input type="text" id="asset_unit_name" name="asset_unit_name" value="A"></input>
+			</label>
+			<br>
+			<label for="asset_total">Total:
+				<input type="number" id="asset_total" name="asset_total" step=1 value=1000000000000></input>
+				<small>Default: 1,000,000.000.000</small>
+			</label>
+			<br>
+			<label for="asset_decimals">Decimals:
+				<input type="number" id="asset_decimals" name="asset_decimals" step=1 value=6></input>
+				<small>Default: 6</small>
+			</label>
+			<br>
+			<button id="create_asset">Create</button>
+			<hr>
+			<h2>Assets</h2>
+			<table>
+				<tr>
+					<th>Asset ID</th>
+					<th>Name</th>
+					<th>Unit Name</th>
+					<th>Total</th>
+					<th>Decimals</th>
+				</tr>
+				{% for a in assets %}
+				<tr>
+					<td>{{ a.index }}</td>
+					<td>{{ a.params.name }}</td>
+					<td>{{ a.params.unit_name }}</td>
+					<td>{{ a.params.total }}</td>
+					<td>{{ a.params.decimals }}</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</main>
 	</body>
 </html>

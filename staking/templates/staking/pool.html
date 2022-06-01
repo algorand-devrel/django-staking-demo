@@ -2,50 +2,55 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Staking Pool #{{ pool_id }}</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="{% static 'staking/css/pico.min.css' %}">
 		<link rel="stylesheet" href="{% static 'staking/css/style.css' %}">
 		<script src="{% static 'staking/js/main.js' %}" defer></script>
-		<script
-		  src="https://unpkg.com/algosdk@v1.16.0/dist/browser/algosdk.min.js"
-		  crossorigin="anonymous"
-		></script>
+		<title>View Pool #{{ pool_id }}</title>
 	</head>
 	<body>
 		<div id="wait"><img src="{% static 'staking/img/spinner.gif' %}"></div>
-		<a href="{% url 'index' %}">&lt; back</a>
-		<h1>Staking Pool #{{ pool_id }}</h1>
-		<button id="connect">Connect Wallet</button>
-		<select id="wallet_select">
-			<option>Select Account...</option>
-		</select>
-		<a id="address"></a><br>
-		<a id="balance"></a>
-		<hr>
-		<input type="number" id="amount" name="amount" step=1></input>
-		<button id="deposit">Deposit</button>
-		<button id="withdraw">Withdraw</button>
-		|
-		<button id="claim">Claim Rewards</button>
-		<hr>
-		<table>
-			<tr>
-				<th>Total Staked</th>
-				<th>Your Staked</th>
-				<th>Your Reward</th>
-				<th>Begin</th>
-				<th>End</th>
-				<th>Last Update</th>
-				<th>APR</th>
-			</tr>
-			<tr>
-				<td>{{ pool_details.total_staked }} {{ pool_details.staked_asset.params.unit_name }}</td>
-				<td><a id="amount_staked" value="{{ pool_details.user_staked_raw }}">{{ pool_details.user_staked }} {{ pool_details.staked_asset.params.unit_name }}</a></td>
-				<td><a id="current_rewards" value="{{ pool_details.user_rewards_raw }}">{{ pool_details.user_rewards }} {{ pool_details.reward_asset.params.unit_name }}</a></td>
-				<td><a id="begin_timestamp" value="{{ pool_details.begin_timestamp }}">{{ pool_details.begin_datetime }}</a></td>
-				<td><a id="end_timestamp" value="{{ pool_details.end_timestamp }}">{{ pool_details.end_datetime }}</a></td>
-				<td><a id="last_updated" value="{{ pool_details.last_updated }}">{{ pool_details.last_updated_datetime }}</a></td>
-				<td><a id="fixed_rate" value="{{ pool_details.basis_points }}">{{ pool_details.rate }}</a></td>
-			</tr>
-		</table>
+		<main class="container">
+			<nav>
+				<ul>
+					<li>
+						<strong>Staking Demo</strong>
+					</li>
+				</ul>
+				<ul>
+					<li><a href="/">View Pools</a></li>
+					<li><a href="/new_asset">Create Asset</a></li>
+					<li><a href="/new_pool">Create Pool</a></li>
+				</ul>
+			</nav>
+			<h1>View Pool #{{ pool_id }}</h1>
+			<button id="connect">Connect Wallet</button>
+			<select id="wallet_select"></select>
+			<a id="balance" class="secondary"></a>
+			<hr>
+			<input type="number" id="amount" name="amount" step=1 placeholder="Stake Amount"></input>
+			<a id="deposit" role="button" href="javascript:void(0);">Deposit</a>
+			<a id="withdraw" role="button" href="javascript:void(0);">Withdraw</a>
+			<a id="claim" role="button" href="javascript:void(0);">Claim Rewards</a>
+			<hr>
+			<table>
+				<tr>
+					<th>Total Staked</th>
+					<th>Your Staked</th>
+					<th>Your Reward</th>
+					<th>APR</th>
+				</tr>
+				<tr>
+					<td>{{ pool_details.total_staked }} {{ pool_details.staked_asset.params.unit_name }}</td>
+					<td><a id="amount_staked" value="{{ pool_details.user_staked_raw }}">{{ pool_details.user_staked }} {{ pool_details.staked_asset.params.unit_name }}</a></td>
+					<td><a id="current_rewards" value="{{ pool_details.user_rewards_raw }}">{{ pool_details.user_rewards }} {{ pool_details.reward_asset.params.unit_name }}</a></td>
+					<td><a id="fixed_rate" value="{{ pool_details.basis_points }}">{{ pool_details.rate }}</a></td>
+				</tr>
+			</table>
+			Start Date: <a id="begin_timestamp" value="{{ pool_details.begin_timestamp }}">{{ pool_details.begin_datetime }}</a><br>
+			End Date: <a id="end_timestamp" value="{{ pool_details.end_timestamp }}">{{ pool_details.end_datetime }}</a><br>
+			Last Update: <a id="last_updated" value="{{ pool_details.last_updated }}">{{ pool_details.last_updated_datetime }}</a><br>
+		</main>
 	</body>
 </html>

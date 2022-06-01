@@ -2,26 +2,32 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Available Staking Pools</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="{% static 'staking/css/pico.min.css' %}">
 		<link rel="stylesheet" href="{% static 'staking/css/style.css' %}">
 		<script src="{% static 'staking/js/main.js' %}" defer></script>
-		<script
-		  src="https://unpkg.com/algosdk@v1.16.0/dist/browser/algosdk.min.js"
-		  crossorigin="anonymous"
-		></script>
+		<title>View Pools</title>
 	</head>
 	<body>
 		<div id="wait"><img src="{% static 'staking/img/spinner.gif' %}"></div>
-		<h1>Available Staking Pools</h1>
+		<main class="container">
+			<nav>
+				<ul>
+					<li>
+						<strong>Staking Demo</strong>
+					</li>
+				</ul>
+				<ul>
+					<li><a href="/">View Pools</a></li>
+					<li><a href="/new_asset">Create Asset</a></li>
+					<li><a href="/new_pool">Create Pool</a></li>
+				</ul>
+			</nav>
+			<h1>View Pools</h1>
 			<button id="connect">Connect Wallet</button>
-			<select id="wallet_select">
-				<option>Select Account...</option>
-			</select>
-			<a id="address"></a><br>
-			<a id="balance"></a>
-			<hr>
-			<a href="/new_asset">Create Asset</a>
-			<a href="/new_pool">New Pool</a>
+			<select id="wallet_select"></select>
+			<a id="balance" class="secondary"></a>
 			<hr>
 			<table>
 				<tr>
@@ -41,5 +47,6 @@
 					</tr>
 				{% endfor %}
 			</table>
+		</main>
 	</body>
 </html>

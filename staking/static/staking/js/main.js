@@ -50,9 +50,9 @@ function connectWallet() {
 }
 
 async function populateWallets(addresses) {
-	document.getElementById('connect').hidden = true;
+	document.getElementById('connect').style.display = 'none';
 	const wallets = document.getElementById('wallet_select');
-	wallets.hidden = false;
+	wallets.style.display = 'block';
 	for (var i = 0; i < addresses.length; i++) {
 		var w = document.createElement('option');
 		w.textContent = addresses[i].address;
@@ -89,7 +89,6 @@ async function selectWallet() {
 	});
 	//document.getElementById('address').text = address;
 	document.getElementById('balance').text = account.amount / 1000000 + " Algo";
-	document.getElementById('connect').hidden = true;
 	document.cookie = "account="+address+"; path=/";
 }
 
@@ -115,7 +114,9 @@ async function createAsset(e) {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('create_asset').ariaBusy = true;
 				let asset_id = await wait_for_transaction(txid);
+				document.getElementById('create_asset').ariaBusy = false;
 				window.location.reload(false);
 			}
 		}
@@ -144,10 +145,14 @@ async function createPool(e) {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('create_pool').ariaBusy = true;
 				let txn = await wait_for_transaction(txid);
+				document.getElementById('create_pool').ariaBusy = false;
 				if (txn['application-index']) {
 					let application_id = txn['application-index'];
+					document.getElementById('create_pool').ariaBusy = true;
 					await initPool(application_id);
+					document.getElementById('create_pool').ariaBusy = false;
 				}
 			}
 		}
@@ -173,7 +178,9 @@ async function initPool(pool_id) {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('create_pool').ariaBusy = true;
 				let resp = await wait_for_transaction(txid);
+				document.getElementById('create_pool').ariaBusy = false;
 				window.location.href = "/";
 			}
 		}
@@ -200,7 +207,9 @@ async function deposit() {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('deposit').ariaBusy = true;
 				let resp = await wait_for_transaction(txid);
+				document.getElementById('deposit').ariaBusy = false;
 				window.location.reload(false);
 			}
 		}
@@ -228,7 +237,9 @@ async function withdraw() {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('withdraw').ariaBusy = true;
 				let resp = await wait_for_transaction(txid);
+				document.getElementById('withdraw').ariaBusy = false;
 				window.location.reload(false);
 			}
 		}
@@ -254,7 +265,9 @@ async function withdrawAll() {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('withdraw_all').ariaBusy = true;
 				let resp = await wait_for_transaction(txid);
+				document.getElementById('withdraw_all').ariaBusy = false;
 				window.location.reload(false);
 			}
 		}
@@ -283,7 +296,9 @@ async function claim() {
 		if (stxns) {
 			let txid = await submit_transactions(stxns);
 			if (txid) {
+				document.getElementById('claim').ariaBusy = true;
 				let resp = await wait_for_transaction(txid);
+				document.getElementById('claim').ariaBusy = false;
 				window.location.reload(false);
 			}
 		}
