@@ -11,7 +11,26 @@ assest and the value of the reward asset. For this you would need an oracle.
 When deploying a new pool it is assumed that the full total supply of the
 reward asset is being deposited into the contract.
 
-## Testing
+## Running the Demo
+
+It is assumed you are using sandbox running a private sandnet chain (not
+Testnet or Mainnet). If you have `DevMode` enabled, you should set it to false
+and clear/restart your sandbox environment so that block progress at a constant
+rate and the global timestamp moves forward.
+
+Make sure you update `./staking/view.py` and set the `deployer` variable to an
+address you control and want to be the authorised pool deployer.
+
+Launch the demo with the following command.
+
+`./manage.py runserver`
+
+Now visit http://127.0.0.1:8000/ to test.
+
+## Smart Contract Testing
+
+Navigate into `./staking/contracts/` to read the TEAL and run the associated
+bash scripts.
 
 Use the `./deploy.sh` script to run through all the features of the contract.
 
