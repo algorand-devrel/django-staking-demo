@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Staking Pool #{{ pool_id }}</title>
+		<link rel="stylesheet" href="{% static 'staking/css/style.css' %}">
+		<script src="{% static 'staking/js/main.js' %}" defer></script>
+		<script
+		  src="https://unpkg.com/algosdk@v1.16.0/dist/browser/algosdk.min.js"
+		  crossorigin="anonymous"
+		></script>
+	</head>
+	<body>
+		<div id="wait"><img src="{% static 'staking/img/spinner.gif' %}"></div>
+		<a href="{% url 'index' %}">&lt; back</a>
+		<h1>Staking Pool #{{ pool_id }}</h1>
+		<button id="connect">Connect Wallet</button>
+		<select id="wallet_select">
+			<option>Select Account...</option>
+		</select>
+		<a id="address"></a><br>
+		<a id="balance"></a>
+		<hr>
+		<button id="withdraw_all">Withdraw All</button>
+		<hr>
+		<table>
+			<tr>
+				<th>Total Staked</th>
+				<th>Your Staked</th>
+				<th>Your Reward</th>
+				<th>Begin</th>
+				<th>End</th>
+				<th>Last Update</th>
+				<th>APR</th>
+			</tr>
+			<tr>
+				<td>{{ pool_details.total_staked }} {{ pool_details.staked_asset.params.unit_name }}</td>
+				<td><a id="amount_staked" value="{{ pool_details.user_staked_raw }}">{{ pool_details.user_staked }} {{ pool_details.staked_asset.params.unit_name }}</a></td>
+				<td><a id="current_rewards" value="{{ pool_details.user_rewards_raw }}">{{ pool_details.user_rewards }} {{ pool_details.reward_asset.params.unit_name }}</a></td>
+				<td><a id="begin_timestamp" value="{{ pool_details.begin_timestamp }}">{{ pool_details.begin_datetime }}</a></td>
+				<td><a id="end_timestamp" value="{{ pool_details.end_timestamp }}">{{ pool_details.end_datetime }}</a></td>
+				<td><a id="last_updated" value="{{ pool_details.last_updated }}">{{ pool_details.last_updated_datetime }}</a></td>
+				<td><a id="fixed_rate" value="{{ pool_details.basis_points }}">{{ pool_details.rate }}</a></td>
+			</tr>
+		</table>
+	</body>
+</html>

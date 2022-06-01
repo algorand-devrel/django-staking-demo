@@ -1,0 +1,44 @@
+body {
+	background: #fffefe;
+	color: #535353;
+}
+
+a, a:link, a:hover, a:visited {
+	color: #535353;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+tr, th, td {
+	border: 1px solid black;
+	padding: 4px;
+}
+
+div#wait{
+	background-color: #ccc6;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	z-index: 1000;
+	display: none;
+	justify-content: center;
+	align-items: center;
+}
+
+div#wait img {
+	user-drag: none; 
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-drag: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+}
+
+select#wallet_select {
+	display: hidden;
+}

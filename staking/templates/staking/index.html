@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Available Staking Pools</title>
+		<link rel="stylesheet" href="{% static 'staking/css/style.css' %}">
+		<script src="{% static 'staking/js/main.js' %}" defer></script>
+		<script
+		  src="https://unpkg.com/algosdk@v1.16.0/dist/browser/algosdk.min.js"
+		  crossorigin="anonymous"
+		></script>
+	</head>
+	<body>
+		<div id="wait"><img src="{% static 'staking/img/spinner.gif' %}"></div>
+		<h1>Available Staking Pools</h1>
+			<button id="connect">Connect Wallet</button>
+			<select id="wallet_select">
+				<option>Select Account...</option>
+			</select>
+			<a id="address"></a><br>
+			<a id="balance"></a>
+			<hr>
+			<a href="/new_asset">Create Asset</a>
+			<a href="/new_pool">New Pool</a>
+			<hr>
+			<table>
+				<tr>
+					<th>Pool ID</th>
+					<th>Staking Asset</th>
+					<th>Reward Asset</th>
+					<th>Details</th>
+					<th>APR</th>
+				</tr>
+				{% for p in pools %}
+					<tr>
+						<td><a href="{% url 'pool' p.id %}">{{ p.id }}</a></td>
+						<td>{{ p.staking_asset.params.name }}</td>
+						<td>{{ p.reward_asset.params.name }}</td>
+						<td>{{ p.duration }}</td>
+						<td>{{ p.rate }}</td>
+					</tr>
+				{% endfor %}
+			</table>
+	</body>
+</html>

@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>New Pool</title>
+		<link rel="stylesheet" href="{% static 'staking/css/style.css' %}">
+		<script src="{% static 'staking/js/main.js' %}" defer></script>
+		<script
+		  src="https://unpkg.com/algosdk@v1.16.0/dist/browser/algosdk.min.js"
+		  crossorigin="anonymous"
+		></script>
+	</head>
+	<body>
+		<div id="wait"><img src="{% static 'staking/img/spinner.gif' %}"></div>
+		<a href="{% url 'index' %}">&lt; back</a>
+		<h1>New Pool</h1>
+		<button id="connect">Connect Wallet</button>
+		<select id="wallet_select">
+			<option>Select Account...</option>
+		</select>
+		<a id="address"></a><br>
+		<a id="balance"></a>
+		<hr>
+		<form name="pool_form">
+			<label for="staking_asset_id">Staking Asset ID:
+				<input type="number" id="staking_asset_id" name="staking_asset_id"></input>
+			</label>
+			<br>
+			<label for="reward_asset_id">Reward Asset ID:
+				<input type="number" id="reward_asset_id" name="reward_asset_id"></input>
+			</label>
+			<br>
+			<label for="fixed_rate">Fixed Rate (Percentage):
+				<input type="number" id="fixed_rate" name="fixed_rate" min=0.01 max=100000 step=0.01></input>
+				<a>E.g. 1.00%</a>
+			</label>
+			<br>
+			<label for="begin_timestamp">Begin:
+				<input type="datetime-local" id="begin_timestamp" name="begin_timestamp"></input>
+			</label>
+			<br>
+			<label for="end_timestamp">End:
+				<input type="datetime-local" id="end_timestamp" name="end_timestamp"></input>
+			</label>
+			<br>
+			<button id="create_pool">Create</button>
+		</form>
+	</body>
+</html>
