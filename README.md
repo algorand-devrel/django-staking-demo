@@ -79,7 +79,7 @@ The reward rate needs to be implemented the same way as the smart contract, so
 that a real-time count of the rewards is matched to what a smart contract would
 provide should the user withdraw at the same moment.
 
-### Smart Contracts
+### Smart Contracts
 
 A single stateful smart contract is deployed per staking pool. This allows the
 smart contract to contain both the logic and also hold the funds (staked assets
