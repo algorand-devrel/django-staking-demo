@@ -2,14 +2,38 @@
 
 set -e -u -x -o pipefail
 
-GOAL="goal"
+# Remove the directory or set to empty string to use a local goal install.
+SB=~/sandbox/sandbox
 
-CREATOR="VOMJQOMC262EPYQP2QHMVVGJSGFAJCFBGCVKSSS5I3GDVAOQZ5VN6PBSDE"
+if [ -z ${SB} ]
+then
+	GOAL="goal"
+else
+	GOAL="${SB} goal"
+fi
+
+# User first account found in goal if not defined.
+CREATOR=""
+if [ -z ${CREATOR} ]
+then
+	CREATOR=$(${GOAL} account list \
+		| head -n1 \
+		| awk '{print $3}' \
+		| tr -d '\r')
+fi
 
 CURRENT=$(date +"%s")
 
 BEGIN=$(expr ${CURRENT} + 25)
 END=$(expr ${BEGIN} + 325) # 3600 seconds = 1 hour
+
+if [ -n "${SB}" ]
+then
+	echo "Sandbox being used."
+	echo "Copying files..."
+	${SB} copyTo staking.teal
+	${SB} copyTo clear.teal
+fi
 
 # Create staking asset
 STAKING_TOTAL=1000000000000000
@@ -126,7 +150,7 @@ ${GOAL} app method --app-id ${APP_ID} -f ${CREATOR} \
 	--on-completion "CloseOut" \
 	--method "withdraw(asset,uint64,account)void" \
 	--arg ${REWARD_ASSET} \
-	--arg 1844674407370955161 \
+	--arg 18446744073709551615 \
 	--arg ${CREATOR} \
 	--fee 2000
 
