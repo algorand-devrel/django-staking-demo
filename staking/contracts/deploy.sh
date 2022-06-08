@@ -4,18 +4,34 @@ set -e -u -x -o pipefail
 
 # Remove the directory or set to empty string to use a local goal install.
 SB=~/sandbox/sandbox
+# Set an account to use, otherwise the first account in goal will be used.
+CREATOR=""
 
+# Configure goal command depending on if we're using sandbox or not.
 if [ -z ${SB} ]
 then
+	echo "Not using sandbox"
 	GOAL="goal"
 else
+	echo "Using sandbox"
 	GOAL="${SB} goal"
 fi
 
-# User first account found in goal if not defined.
-CREATOR=""
+# Check we're not on mainnet
+NETWORK=$(${GOAL} node status \
+	| grep 'Genesis ID' \
+	| awk '{print $3}' \
+	| tr -d '\r')
+if [[ ${NETWORK} == *"mainnet"* ]]
+then
+	echo "ABORT: Network appears to be mainnet!"
+	exit
+fi
+
+# Configure creator address if not defined above.
 if [ -z ${CREATOR} ]
 then
+	echo "Finding creator address."
 	CREATOR=$(${GOAL} account list \
 		| head -n1 \
 		| awk '{print $3}' \
@@ -23,11 +39,10 @@ then
 fi
 
 CURRENT=$(date +"%s")
-
 BEGIN=$(expr ${CURRENT} + 25)
 END=$(expr ${BEGIN} + 325) # 3600 seconds = 1 hour
 
-if [ -n "${SB}" ]
+if [ -n ${SB} ]
 then
 	echo "Sandbox being used."
 	echo "Copying files..."
@@ -99,12 +114,13 @@ ${GOAL} asset send --assetid ${REWARD_ASSET} -f ${CREATOR} \
 	-t ${APP_ADDR} \
 	-a ${REWARD_TOTAL} \
 	-o rewards.txn
+
 # Set the fixed rate and add the rewards to contract
 ${GOAL} app method --app-id ${APP_ID} -f ${CREATOR} \
 	--on-completion "NoOp" \
 	--method "reward(axfer,uint64,asset)void" \
 	--arg rewards.txn \
-	--arg 100 \
+	--arg 10000 \
 	--arg ${REWARD_ASSET}
 
 # Deposit staked asset
