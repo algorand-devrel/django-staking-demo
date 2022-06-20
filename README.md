@@ -32,7 +32,8 @@ Now visit http://127.0.0.1:8000/ to test.
 ## Smart Contract Testing
 
 Navigate into `./staking/contracts/` to read the TEAL and run the associated
-bash scripts.
+bash scripts. There is also a PyTeal version in the same directory, but you
+must run it to generate the TEAL and ABI.
 
 Use the `./deploy.sh` script to run through all the features of the contract.
 
