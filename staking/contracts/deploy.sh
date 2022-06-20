@@ -5,7 +5,14 @@ set -e -u -x -o pipefail
 # Remove the directory or set to empty string to use a local goal install.
 SB=~/sandbox/sandbox
 # Set an account to use, otherwise the first account in goal will be used.
+# If you're running this script and it's failing setting a creator, set it
+# manullay here.
 CREATOR=""
+
+# Optionally use the "pyteal_" code. But if you make changes, remember to
+# regenerate them.
+APPROVAL_TEAL="staking.teal"
+CLEARSTATE_TEAL="clear.teal"
 
 # Configure goal command depending on if we're using sandbox or not.
 if [ -z ${SB} ]
@@ -46,8 +53,8 @@ if [ -n ${SB} ]
 then
 	echo "Sandbox being used."
 	echo "Copying files..."
-	${SB} copyTo staking.teal
-	${SB} copyTo clear.teal
+	${SB} copyTo ${APPROVAL_TEAL}
+	${SB} copyTo ${CLEARSTATE_TEAL}
 fi
 
 # Create staking asset
@@ -82,8 +89,8 @@ APP_ID=$(${GOAL} app method --create -f ${CREATOR} \
 	--arg ${END} \
 	--global-byteslices 1 --global-ints 10 \
 	--local-byteslices 0 --local-ints 3 \
-	--approval-prog staking.teal \
-	--clear-prog clear.teal \
+	--approval-prog ${APPROVAL_TEAL} \
+	--clear-prog ${CLEARSTATE_TEAL} \
 	| grep 'Created app with app index' \
 	| awk '{print $6}' \
 	| tr -d '\r')
