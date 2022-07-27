@@ -22,7 +22,7 @@ algod_client = v2client.algod.AlgodClient(algod_token, algod_addr)
 
 # Who is the deployer of the staking contracts, this demo assumes a single
 # account will be the "author" of the staking pools.
-deployer = 'VOMJQOMC262EPYQP2QHMVVGJSGFAJCFBGCVKSSS5I3GDVAOQZ5VN6PBSDE'
+deployer = 'ALICE7Y2JOFGG2VGUC64VINB75PI56O6M2XW233KG2I3AIYJFUD4QMYTJM'
 
 # A simple helper function to get the ABI method from the name.
 def get_method(c: Contract, name: str) -> Method:

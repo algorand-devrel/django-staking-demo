@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -u -x -o pipefail
+set -u -x -o pipefail
 
 # Remove the directory or set to empty string to use a local goal install.
 SB=~/sandbox/sandbox

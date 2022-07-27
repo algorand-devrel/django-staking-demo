@@ -188,11 +188,13 @@ async function initPool(pool_id) {
 }
 
 async function deposit() {
+	const decimals = 6;
+	const dp = 10**decimals;
 	axfer_amount = document.getElementById('amount').value || 0;
 	pool_id = document.URL.match(/.*\/(\d*)$/)[1];
 	parameters = {
 		sender: document.getElementById('wallet_select').value,
-		amount: parseInt(axfer_amount),
+		amount: Math.round(parseFloat(axfer_amount) * dp),
 	}
 	let response = await fetch('/'+pool_id+'/deposit', {
 		method: 'POST',
@@ -217,11 +219,13 @@ async function deposit() {
 }
 
 async function withdraw() {
+	const decimals = 6;
+	const dp = 10**decimals;
 	axfer_amount = document.getElementById('amount').value || 0;
 	pool_id = document.URL.match(/.*\/(\d*)$/)[1];
 	parameters = {
 		sender: document.getElementById('wallet_select').value,
-		amount: parseInt(axfer_amount),
+		amount: Math.round(parseFloat(axfer_amount) * dp),
 		all: false,
 	}
 	let response = await fetch('/'+pool_id+'/withdraw', {

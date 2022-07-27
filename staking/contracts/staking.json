@@ -14,7 +14,7 @@
 		},
 		{
 			"name": "init",
-			"desc": "Initialise a newly deployed poool",
+			"desc": "Initialise a newly deployed pool",
 			"args": [
 				{"type": "pay"},
 				{"type": "asset"},
