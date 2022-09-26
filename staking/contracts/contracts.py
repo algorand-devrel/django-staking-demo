@@ -308,7 +308,7 @@ def config(
     )
 
 if __name__ == '__main__':
-    approval, clearstate, abi = router.compile_program(version=6)
+    approval, clearstate, contract = router.compile_program(version=6)
 
     with open("pyteal_staking.teal", "w") as f:
         f.write(approval)
@@ -317,5 +317,5 @@ if __name__ == '__main__':
         f.write(clearstate)
 
     with open("pyteal_abi.json", "w") as f:
-        f.write(json.dumps(abi.dictify()))
+        f.write(json.dumps(contract.dictify()))
 
