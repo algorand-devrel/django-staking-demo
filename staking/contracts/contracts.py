@@ -14,13 +14,13 @@ def is_admin() -> Expr:
     return Assert(Txn.sender() == App.globalGet(Bytes("A")))
 
 @Subroutine(TealType.none)
-def set_admin(addr: Expr):
+def set_admin(addr: Expr) -> Expr:
     return Seq(
         App.globalPut(Bytes("A"), addr),
     )
 
 @Subroutine(TealType.none)
-def optin_asset(asset: Expr):
+def optin_asset(asset: Expr) -> Expr:
     return Seq(
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.SetFields({
