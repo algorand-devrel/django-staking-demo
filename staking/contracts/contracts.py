@@ -3,6 +3,8 @@
 import json
 from pyteal import *
 
+pragma(compiler_version="^0.18.1")
+
 @Subroutine(TealType.uint64)
 def is_creator() -> Expr:
     return Txn.sender() == Global.creator_address()
