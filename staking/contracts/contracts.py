@@ -243,6 +243,9 @@ def init(
     """Initialise the newly deployed contract, funding it with a minimum
     balance and allowing it to opt in to the request assets."""
     return Seq(
+        # Check if admin is initializing the contract
+        is_admin(),
+
         # Check receiver of payment is this smart contract
         Assert(pay.get().receiver() == Global.current_application_address()),
 
@@ -303,7 +306,7 @@ def config(
 ) -> Expr:
     return Seq(
         is_admin(),
-        App.globalPut(Bytes("P"), Not(Not(paused.get()))),
+        App.globalPut(Bytes("P"), paused.get()),
         set_admin(admin.address()),
     )
 
