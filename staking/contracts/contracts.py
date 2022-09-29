@@ -69,7 +69,7 @@ def send_asset(
                 TxnField.xfer_asset: asset.asset_id(),
                 TxnField.asset_amount: amount.get(),
                 TxnField.asset_receiver: recipient.address(),
-                TxnField.fee: Int(0),
+                TxnField.fee: Int(0), # Who covers the fee here? Since it's an inner txn, does the sender who initiated the call foot the bill in the outer txn?
             }
         ),
         InnerTxnBuilder.Submit(),
@@ -85,10 +85,10 @@ def is_not_paused() -> Expr:
 def calculate_rewards(addr: Expr) -> Expr:
     return Seq(
         # Skip if not begun
-        If(Global.latest_timestamp() > App.globalGet(Bytes("BT")), Return()),
+        If(Global.latest_timestamp() < App.globalGet(Bytes("BT")), Return()),
 
         # Skip if updated since ET
-        If(App.localGet(addr, Bytes("LU")) < App.globalGet(Bytes("ET")), Return()),
+        If(App.localGet(addr, Bytes("LU")) > App.globalGet(Bytes("ET")), Return()), # I don't think "LU" is set anywhere, so "LU" value seems to be 0 here. (The original condition will always evaluate to True)
 
         # Calculate time since last update
         # End
@@ -116,6 +116,9 @@ def calculate_rewards(addr: Expr) -> Expr:
 
         # Add rewards to local
         App.localPut(addr, Bytes("AR"), App.localGet(addr, Bytes("AR")) + rewards.load()),
+
+        # Should we update "LU" here?
+        # App.localPut(addr, Bytes("LU"), Global.latest_timestamp())
     )
 
 router = Router(
