@@ -125,13 +125,13 @@ router = Router(
     BareCallActions(
         # On create only, just approve
         no_op=OnCompleteAction.never(),
-        # Just be nice, we _must_ provide _something_ for clear state becuase it is its own
+        # Just be nice, we _must_ provide _something_ for clear state because it is its own
         # program and the router needs _something_ to build
         clear_state=OnCompleteAction.call_only(Approve()),
     ),
 )
 
-@router.method(no_op=CallConfig.ALL, opt_in=CallConfig.ALL)
+@router.method(no_op=CallConfig.CALL, opt_in=CallConfig.CALL)
 def deposit(
     axfer: abi.AssetTransferTransaction,
     asset: abi.Asset
@@ -280,6 +280,9 @@ def reward(
     """Primarily used to supply the initial rewards for the staking contract,
     but can also be used to add additional rewards before the contract ends."""
     return Seq(
+        # Check if admin is supplying the rewards
+        is_admin(),
+
         # Check previous transaction is of type axfer
         Assert(rewards.get().type_enum() == TxnType.AssetTransfer),
 
