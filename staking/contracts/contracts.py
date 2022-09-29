@@ -117,7 +117,7 @@ def calculate_rewards(addr: Expr) -> Expr:
 
         # Calculate rewards
         (rewards := ScratchVar()).store(
-            App.localGet(addr, Bytes("AS")) * duration.load() / Int(31557600) * App.globalGet(Bytes("FR")) / Int(10000)
+            App.localGet(addr, Bytes("AS")) * duration.load() / Int(31557600) * App.globalGet(Bytes("FR")) / Int(10000) # I think there might be truncation issues, especially with very high denominator values.
         ),
 
         # Remove rewards from global
