@@ -38,6 +38,10 @@ def send_asset(
     recipient: abi.Account
 ) -> Expr:
     return Seq(
+        
+        # Store amount we actually need to dispense.
+        (dispensed_amount := ScratchVar()).store(amount.get()),
+
         # Check if we're sending the staking asset or the reward asset
         # If we're trying to send more than the account has, use the maximum
         # available value the account has.
@@ -45,20 +49,22 @@ def send_asset(
         If(asset.asset_id() == App.globalGet(Bytes("SA")))
         .Then(Seq(
             (amount_staked := ScratchVar()).store(App.localGet(recipient.address(), Bytes("AS"))),
-            If(amount.get() > amount_staked.load()).Then(amount.set(amount_staked.load())),
+            If(dispensed_amount.load() > amount_staked.load())
+            .Then(dispensed_amount.store(amount_staked.load())),
             App.localPut(
                 recipient.address(),
                 Bytes("AS"),
-                App.localGet(recipient.address(), Bytes("AS")) - amount_staked.load()
+                App.localGet(recipient.address(), Bytes("AS")) - dispensed_amount.load() # I think this should be (AS - amount) here; will need to store amount in separate scratch slot.
             ),
         ))
         .Else(Seq(
             (amount_rewarded := ScratchVar()).store(App.localGet(recipient.address(), Bytes("AR"))),
-            If(amount.get() > amount_rewarded.load()).Then(amount.set(amount_rewarded.load())),
+            If(dispensed_amount.load() > amount_rewarded.load())
+            .Then(dispensed_amount.store(amount_rewarded.load())),
             App.localPut(
                 recipient.address(),
                 Bytes("AR"),
-                App.localGet(recipient.address(), Bytes("AR")) - amount_rewarded.load()
+                App.localGet(recipient.address(), Bytes("AR")) - dispensed_amount.load()
             ),
         )),
         # Send the amount requested or maximum amount available to the recipient.
@@ -67,7 +73,7 @@ def send_asset(
             {
                 TxnField.type_enum: TxnType.AssetTransfer,
                 TxnField.xfer_asset: asset.asset_id(),
-                TxnField.asset_amount: amount.get(),
+                TxnField.asset_amount: dispensed_amount.load(),
                 TxnField.asset_receiver: recipient.address(),
                 TxnField.fee: Int(0), # Who covers the fee here? Since it's an inner txn, does the sender who initiated the call foot the bill in the outer txn?
             }
@@ -112,7 +118,7 @@ def calculate_rewards(addr: Expr) -> Expr:
         ),
 
         # Remove rewards from global
-        App.globalPut(Bytes("TR"), App.globalGet(Bytes("TR")) - rewards.load()),
+        App.globalPut(Bytes("TR"), App.globalGet(Bytes("TR")) - rewards.load()), # What happens after "TR" runs out and goes to zero?
 
         # Add rewards to local
         App.localPut(addr, Bytes("AR"), App.localGet(addr, Bytes("AR")) + rewards.load()),
