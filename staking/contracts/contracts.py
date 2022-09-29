@@ -57,7 +57,7 @@ def send_asset(
                 App.localGet(recipient.address(), Bytes("AS")) - dispensed_amount.load() # I think this should be (AS - amount) here; will need to store amount in separate scratch slot.
             ),
         ))
-        .Else(Seq(
+        .Else(Seq( # What if the asset is not "SA" OR not "RA"?
             (amount_rewarded := ScratchVar()).store(App.localGet(recipient.address(), Bytes("AR"))),
             If(dispensed_amount.load() > amount_rewarded.load())
             .Then(dispensed_amount.store(amount_rewarded.load())),
@@ -67,6 +67,9 @@ def send_asset(
                 App.localGet(recipient.address(), Bytes("AR")) - dispensed_amount.load()
             ),
         )),
+        # There should be a check to fail if the sending asset is not the Staked or Reward Asset.
+
+
         # Send the amount requested or maximum amount available to the recipient.
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.SetFields(
@@ -94,7 +97,7 @@ def calculate_rewards(addr: Expr) -> Expr:
         If(Global.latest_timestamp() < App.globalGet(Bytes("BT")), Return()),
 
         # Skip if updated since ET
-        If(App.localGet(addr, Bytes("LU")) > App.globalGet(Bytes("ET")), Return()), # I don't think "LU" is set anywhere, so "LU" value seems to be 0 here. (The original condition will always evaluate to True)
+        If(App.localGet(addr, Bytes("LU")) > App.globalGet(Bytes("ET")), Return()), 
 
         # Calculate time since last update
         # End
@@ -112,19 +115,20 @@ def calculate_rewards(addr: Expr) -> Expr:
         # Duration
         (duration := ScratchVar()).store(end.load() - start.load()),
 
-        # Calculate time since last updated
+        # Calculate rewards
         (rewards := ScratchVar()).store(
             App.localGet(addr, Bytes("AS")) * duration.load() / Int(31557600) * App.globalGet(Bytes("FR")) / Int(10000)
         ),
 
         # Remove rewards from global
-        App.globalPut(Bytes("TR"), App.globalGet(Bytes("TR")) - rewards.load()), # What happens after "TR" runs out and goes to zero?
+        App.globalPut(Bytes("TR"), App.globalGet(Bytes("TR")) - rewards.load()), # What happens after "TR" runs out and goes to zero? I think the transaction will fail and any method (i.e. deposit, withdraw) that wants to calculate rewards will also fail. Would anybody be able to take out assets if this happens?
 
         # Add rewards to local
         App.localPut(addr, Bytes("AR"), App.localGet(addr, Bytes("AR")) + rewards.load()),
 
-        # Should we update "LU" here?
+        # Should we update "LU" here? It seems to be updated in the TEAL code
         # App.localPut(addr, Bytes("LU"), Global.latest_timestamp())
+        # App.GlobalPut(Bytes("LU"), Global.latest_timestamp()) # Is the Global "LU" just for informational purposes?
     )
 
 router = Router(
@@ -157,6 +161,9 @@ def deposit(
 
         # Check the staking asset is being received by the smart contract
         Assert(axfer.get().asset_receiver() == Global.current_application_address()),
+
+        # Need to check that axfer contains the Staked asset
+        Assert(axfer.get().xfer_asset() == App.globalGet(Bytes("SA"))),
 
         # Calculate rewards
         calculate_rewards(Txn.sender()),
