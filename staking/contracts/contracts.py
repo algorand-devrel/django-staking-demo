@@ -78,7 +78,7 @@ def send_asset(
                 TxnField.xfer_asset: asset.asset_id(),
                 TxnField.asset_amount: dispensed_amount.load(),
                 TxnField.asset_receiver: recipient.address(),
-                TxnField.fee: Int(0), # Who covers the fee here? Since it's an inner txn, does the sender who initiated the call foot the bill in the outer txn?
+                TxnField.fee: Int(0), # Personal note: Who covers the fee here? First appl call has fee*2?
             }
         ),
         InnerTxnBuilder.Submit(),
