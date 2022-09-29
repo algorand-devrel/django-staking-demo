@@ -155,6 +155,9 @@ def deposit(
         # Check the contract isn't paused
         is_not_paused(),
 
+        # Check previous transaction is of type axfer
+        Assert(axfer.get().type_enum() == TxnType.AssetTransfer),
+
         # Confirm sender for this appl and the axfer are the same
         # Note: Do we need to care if it came from the same address?
         Assert(axfer.get().sender() == Txn.sender()),
@@ -261,6 +264,9 @@ def init(
     return Seq(
         # Check if admin is initializing the contract
         is_admin(),
+
+        # Check previous transaction is a payment transaction
+        Assert(pay.get().type_enum() == TxnType.Payment),
 
         # Check receiver of payment is this smart contract
         Assert(pay.get().receiver() == Global.current_application_address()),
