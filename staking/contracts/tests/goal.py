@@ -262,9 +262,6 @@ class Goal:
             return self.send(tx, confirm=True)
         return tx
 
-    def get_sp(self):
-        return self.algod.suggested_params()
-
     def keyreg(
         self,
         sender,
