@@ -127,8 +127,8 @@ def calculate_rewards(addr: Expr) -> Expr:
         App.localPut(addr, Bytes("AR"), App.localGet(addr, Bytes("AR")) + rewards.load()),
 
         # Should we update "LU" here? It seems to be updated in the TEAL code
-        # App.localPut(addr, Bytes("LU"), Global.latest_timestamp())
-        # App.GlobalPut(Bytes("LU"), Global.latest_timestamp()) # Is the Global "LU" just for informational purposes?
+        App.localPut(addr, Bytes("LU"), Global.latest_timestamp()),
+        App.globalPut(Bytes("LU"), Global.latest_timestamp()) # Is the Global "LU" just for informational purposes?
     )
 
 router = Router(
