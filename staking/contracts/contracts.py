@@ -7,6 +7,7 @@ pragma(compiler_version="^0.18.1")
 
 # Constants
 ADMIN_ADDRESS = Bytes("A")
+INIT_FLAG = Bytes("I")
 PAUSED_FLAG = Bytes("P")
 STAKED_ASSET = Bytes("SA")
 AMOUNT_STAKED = Bytes("AS")
@@ -262,6 +263,9 @@ def deploy(
         Assert(Gt(end.get(), begin.get())),
         App.globalPut(END_TIMESTAMP, end.get()),
 
+        # Set init flag
+        App.globalPut(INIT_FLAG, Int(1)),
+
         # Success
         Approve(),
     )
@@ -277,6 +281,10 @@ def init(
     return Seq(
         # Check if admin is initializing the contract
         is_admin(),
+
+        # Only allow calling once, when the init flag is set
+        Assert(App.globalGet(INIT_FLAG)),
+        App.globalDel(INIT_FLAG),
 
         # Check previous transaction is a payment transaction
         Assert(pay.get().type_enum() == TxnType.Payment),
