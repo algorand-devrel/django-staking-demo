@@ -6,6 +6,7 @@ from pyteal import (pragma, Seq, Subroutine, TealType, Expr, abi, Router, BareCa
 pragma(compiler_version="^0.18.1")
 
 # Constants
+CONTRACT_VERSION = 6
 ADMIN_ADDRESS = Bytes("A")
 INIT_FLAG = Bytes("I")
 PAUSED_FLAG = Bytes("P")
@@ -357,7 +358,7 @@ def config(
     )
 
 if __name__ == '__main__':
-    approval, clearstate, contract = router.compile_program(version=6)
+    approval, clearstate, contract = router.compile_program(version=CONTRACT_VERSION)
 
     with open("pyteal_staking.teal", "w") as f:
         f.write(approval)
