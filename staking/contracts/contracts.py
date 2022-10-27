@@ -135,11 +135,23 @@ def calculate_rewards(addr: Expr) -> Expr:
             App.localGet(addr, AMOUNT_STAKED) * duration.load() / Int(31557600) * App.globalGet(FIXED_RATE) / Int(10000) # I think there might be truncation issues, especially with very high denominator values.
         ),
 
-        # Remove rewards from global
-        App.globalPut(TOTAL_REWARDS, App.globalGet(TOTAL_REWARDS) - rewards.load()), # What happens after "TR" runs out and goes to zero? I think the transaction will fail and any method (i.e. deposit, withdraw) that wants to calculate rewards will also fail. Would anybody be able to take out assets if this happens?
+        # If there are more total rewards than have been rewarded we can
+        # issue them, otherwise we can only reward what's available.
+        If(App.globalGet(TOTAL_REWARDS) >= rewards.load())
+        .Then(Seq(
+            # Remove rewards from global
+            App.globalPut(TOTAL_REWARDS, App.globalGet(TOTAL_REWARDS) - rewards.load()),
 
-        # Add rewards to local
-        App.localPut(addr, AMOUNT_REWARDED, App.localGet(addr, AMOUNT_REWARDED) + rewards.load()),
+            # Add rewards to local
+            App.localPut(addr, AMOUNT_REWARDED, App.localGet(addr, AMOUNT_REWARDED) + rewards.load()),
+        ))
+        .Else(Seq(
+            # Add any remaining rewards to local
+            App.localPut(addr, AMOUNT_REWARDED, App.localGet(addr, AMOUNT_REWARDED) + App.globalGet(TOTAL_REWARDS)),
+
+            # Global rewards are now empty.
+            App.globalPut(TOTAL_REWARDS, Int(0)),
+        )),
 
         # Should we update "LU" here? It seems to be updated in the TEAL code
         App.localPut(addr, LAST_UPDATED, Global.latest_timestamp()),
