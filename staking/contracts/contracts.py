@@ -155,7 +155,7 @@ def calculate_rewards(addr: Expr) -> Expr:
 
         # Should we update "LU" here? It seems to be updated in the TEAL code
         App.localPut(addr, LAST_UPDATED, Global.latest_timestamp()),
-        App.globalPut(LAST_UPDATED, Global.latest_timestamp()) # Is the Global "LU" just for informational purposes?
+        App.globalPut(LAST_UPDATED, Global.latest_timestamp())
     )
 
 router = Router(
